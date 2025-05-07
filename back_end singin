@@ -1,0 +1,56 @@
+<?php
+// File: controller/signin.php (or wherever your signin processing is handled)
+
+function signin() {
+    // Initialize variables
+    $thongbao = '';
+    
+    // Check if the form was submitted
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['signin'])) {
+        // Get form data
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['pass'] ?? '';
+        
+        // Validate inputs
+        if (empty($username) || empty($password)) {
+            $thongbao = "Vui lòng nhập đầy đủ tài khoản và mật khẩu!";
+        } else {
+            // Connect to database (replace with your actual database connection)
+            $db = new PDO('mysql:host=localhost;dbname=your_database', 'username', 'password');
+            
+            // Prepare SQL to prevent SQL injection
+            $stmt = $db->prepare("SELECT * FROM users WHERE username = :username");
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+            
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Verify user exists and password is correct
+            if ($user && password_verify($password, $user['password'])) {
+                // Start session and set user data
+                session_start();
+                $_SESSION['user'] = [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'role' => $user['role']
+                ];
+                
+                // Redirect to home page or dashboard
+                header("Location: index.php");
+                exit();
+            } else {
+                $thongbao = "Tài khoản hoặc mật khẩu không đúng!";
+            }
+        }
+    }
+    
+    // Include the view file (your HTML form)
+    include 'view/signin_form.php';
+}
+
+// Call the function if this is the signin page
+if (isset($_GET['act']) && $_GET['act'] == 'signin') {
+    signin();
+}
+?>
